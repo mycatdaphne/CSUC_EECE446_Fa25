@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
 
 		std::string chunk(buff, bytes_received);
 		std::cout << chunk;
-		int pos = 0;
+		size_t pos = 0;
 		while ((pos = chunk.find("<h1>", pos)) != std::string::npos) {
 			total_tags++;
 			pos += 4;
