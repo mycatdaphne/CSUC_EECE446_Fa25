@@ -8,6 +8,7 @@
 #include <netdb.h>
 #include <string.h>
 #include <unistd.h>
+#include <iostream>
 
 /*
  * Lookup a host IP address and connect to it using service. Arguments match the first two
@@ -18,11 +19,18 @@
  */
 int lookup_and_connect( const char *host, const char *service );
 
-int main( ) {
+int main(int argc, char *argv[]) {
 	int s;
-	const char *host = "www.server.com";
-	const char *port = "5432";
+	const char *host = "www.ecst.csuchico.edu";
+	const char *port = "80";
 
+	int bytes_sent, bytes_received;
+	char buff[4115];
+	char *bp = buff;
+	int chunk_size = atoi(argv[1]);
+	char h1[] = "<h1>";
+	int total_tags = 0;
+	
 	/* Lookup IP and connect to server */
 	if ( ( s = lookup_and_connect( host, port ) ) < 0 ) {
 		exit( 1 );
@@ -36,6 +44,30 @@ int main( ) {
 	 * 4) prints the total number of bytes received
 	 *
 	 * */
+	
+	 //send
+	const char *msg = "GET /~kkredo/file.html HTTP/1.0\r\n\r\n";
+	int len = strlen(msg);
+	bytes_sent = send(s, msg, len, 0);
+	std::cout << bytes_sent << std::endl;
+
+	//recv
+	int total_received = 0;
+
+	while((bytes_received = recv(s, bp, chunk_size, 0)) > 0) {
+		total_received += bytes_received;
+
+		std::string chunk(buff, bytes_received);
+		std::cout << chunk;
+		int pos = 0;
+		while ((pos = chunk.find("<h1>", pos)) != std::string::npos) {
+			total_tags++;
+			pos += 4;
+		}
+	}
+
+	std::cout << bytes_received << std::endl;
+	std::cout << total_tags << std::endl;
 
 	close( s );
 
