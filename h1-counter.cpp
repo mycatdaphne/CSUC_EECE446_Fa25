@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
 
 	int bytes_received;
 	int bytes_sent = 0;
-	char buff[4115];
+	char buff[1000];
 	char *bp = buff;
 	int chunk_size = atoi(argv[1]);
 	int total_tags = 0;
@@ -71,7 +71,6 @@ int main(int argc, char *argv[]) {
 		total_received += bytes_received;
 
 		std::string chunk(buff, bytes_received);
-		std::cout << chunk;
 		size_t pos = 0;
 		while ((pos = chunk.find("<h1>", pos)) != std::string::npos) {
 			total_tags++;
