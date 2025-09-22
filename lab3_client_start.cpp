@@ -20,15 +20,21 @@
 int lookup_and_connect( const char *host, const char *service );
 
 int main(int argc, char *argv[]) {
+
+	if (argc < 2) {
+		std::cout << "Incorrect number of arguments. Must enter number of bytes in one chunk" << std::endl;
+		return 1;
+	}
+
 	int s;
 	const char *host = "www.ecst.csuchico.edu";
 	const char *port = "80";
 
-	int bytes_sent, bytes_received;
+	int bytes_received;
+	int bytes_sent = 0;
 	char buff[4115];
 	char *bp = buff;
 	int chunk_size = atoi(argv[1]);
-	char h1[] = "<h1>";
 	int total_tags = 0;
 	
 	/* Lookup IP and connect to server */
@@ -48,8 +54,15 @@ int main(int argc, char *argv[]) {
 	 //send
 	const char *msg = "GET /~kkredo/file.html HTTP/1.0\r\n\r\n";
 	int len = strlen(msg);
-	bytes_sent = send(s, msg, len, 0);
-	std::cout << bytes_sent << std::endl;
+	while (bytes_sent < len) {
+		int n = send(s, msg + bytes_sent, len - bytes_sent, 0);
+		if (n < 0) {
+			perror("send");
+			close(s);
+			exit(1);
+		}
+		bytes_sent += n;
+	}
 
 	//recv
 	int total_received = 0;
@@ -66,8 +79,8 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	std::cout << bytes_received << std::endl;
-	std::cout << total_tags << std::endl;
+	std::cout << "Number of <h1> tags: " << total_tags << std::endl;
+	std::cout << "Number of bytes: " << total_received << std::endl;
 
 	close( s );
 
