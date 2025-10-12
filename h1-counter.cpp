@@ -12,6 +12,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <iostream>
+#include <fstream>
 
 /*
  * Lookup a host IP address and connect to it using service. Arguments match the first two
@@ -24,6 +25,8 @@ int lookup_and_connect( const char *host, const char *service );
 
 int main(int argc, char *argv[]) {
 
+	std::ofstream outfile("local_file", std::ios::binary);
+
 	if (argc < 2) {
 		std::cout << "Incorrect number of arguments. Must enter number of bytes in one chunk" << std::endl;
 		return 1;
@@ -35,10 +38,10 @@ int main(int argc, char *argv[]) {
 
 	int bytes_received;
 	int bytes_sent = 0;
-	char buff[1000];
+	char buff[90000];
 	char *bp = buff;
 	int chunk_size = atoi(argv[1]);
-	int total_tags = 0;
+	//int total_tags = 0;
 	
 	/* Lookup IP and connect to server */
 	if ( ( s = lookup_and_connect( host, port ) ) < 0 ) {
@@ -55,7 +58,7 @@ int main(int argc, char *argv[]) {
 	 * */
 	
 	 //send
-	const char *msg = "GET /~kkredo/file.html HTTP/1.0\r\n\r\n";
+	const char *msg = "GET /~kkredo/reset_instructions.pdf HTTP/1.0\r\n\r\n";
 	int len = strlen(msg);
 	while (bytes_sent < len) {
 		int n = send(s, msg + bytes_sent, len - bytes_sent, 0);
@@ -72,18 +75,9 @@ int main(int argc, char *argv[]) {
 
 	while((bytes_received = recv(s, bp, chunk_size, 0)) > 0) {
 		total_received += bytes_received;
-
-		std::string chunk(buff, bytes_received);
-		size_t pos = 0;
-		while ((pos = chunk.find("<h1>", pos)) != std::string::npos) {
-			total_tags++;
-			pos += 4;
 		}
-	}
-
-	std::cout << "Number of <h1> tags: " << total_tags << std::endl;
-	std::cout << "Number of bytes: " << total_received << std::endl;
-
+	outfile.write(bp, total_received);
+		
 	close( s );
 
 	return 0;
