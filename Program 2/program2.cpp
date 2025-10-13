@@ -6,6 +6,8 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <vector>
+#include <dirent.h>
+#include <string>
 
 using namespace std;
 
@@ -16,7 +18,7 @@ void publish(int sock);
 
 int main(int argc, char *argv[]) {
 	if (argc != 4) {
-		cerr << "" << endl;
+		cerr << "args" << endl;
 		return 1;
 	}
 
@@ -52,7 +54,7 @@ int reg_connect(const char *host, const char *port) {
 
 	sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock < 0) {
-		perror("socket");
+		cerr << "socket" << endl;
 		return -1;
 	}
 
@@ -60,13 +62,13 @@ int reg_connect(const char *host, const char *port) {
 	reg.sin_port   = htons(port_num);
 
 	if (inet_pton(AF_INET, host, &reg.sin_addr) <= 0) {
-		cerr << "Invalid address" << endl;
+		cerr << "address" << endl;
 		close(sock);
 		return -1;
 	}
 
 	if (::connect(sock, (struct sockaddr*)&reg, sizeof(reg)) < 0) {
-		perror("connect");
+		cerr << "connect" << endl;
 		close(sock);
 		return -1;
 	}
@@ -90,12 +92,12 @@ void join(int sock, uint32_t peer_id) {
 void search(int sock) {
 	uint8_t action = 2;
 	string filename;
-	cout << "Enter file name " << endl;
-	cin>> filename;
+	cout << "Enter file name: " << endl;
+	cin >> filename;
 
 	vector<unsigned char> msg;
 	msg.push_back(action);
-	for (uint32_t i = 0; i < filename.length(); i++) {
+	for (size_t i = 0; i < filename.length(); i++) {
 		msg.push_back((unsigned char)filename[i]);
 	}
 	msg.push_back('\0');
@@ -105,7 +107,7 @@ void search(int sock) {
 	char buf[10];
 	int n = recv(sock, buf, 10, 0);
 	if (n <= 0) {
-		cerr << "Error receiving response" << endl;
+		cerr << "response" << endl;
 		return;
 	}
 
@@ -132,4 +134,43 @@ void search(int sock) {
 	cout << "File found at" << endl;
 	cout << "Peer " << peer_id << endl;
 	cout << ip << ":" << port << endl;
+}
+
+void publish(int sock) {
+	uint8_t action = 1;
+
+	vector<string> files;
+
+	DIR *dir = opendir("SharedFiles");
+	if (dir == nullptr) {
+		cerr << "cant open directory" << endl;
+		return;
+	}
+
+	struct dirent *file;
+	while ((file = readdir(dir)) != nullptr) {
+		if (file->d_type == DT_REG) {
+			files.push_back(string(file->d_name));
+		}
+	}
+
+	closedir(dir);
+
+	vector<unsigned char> msg;
+	msg.push_back(action);
+
+    uint32_t count_net = htonl(files.size());
+    unsigned char bytes[4];
+    memcpy(bytes, &count_net, 4);
+    msg.insert(msg.end(), bytes, bytes + 4);
+
+    for (size_t i = 0; i < files.size(); i++) {
+        string name = files[i];
+        for (size_t j = 0; j < name.size(); j++) {
+            msg.push_back((unsigned char)name[j]);
+        }
+        msg.push_back('\0');
+    }
+
+	send(sock, msg.data(), msg.size(), 0);
 }
